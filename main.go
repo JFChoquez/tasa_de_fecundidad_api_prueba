@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -61,6 +60,5 @@ func main() {
 	http.HandleFunc("/list", ListCountrys)
 	http.HandleFunc("/get/", Get)
 
-	fmt.Println("Runing on port: ")
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":10000", nil)
 }
