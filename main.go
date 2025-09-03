@@ -63,7 +63,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{msg: "no data"}`))
+		w.Write([]byte(`{"msg": "no data"}`))
 		return
 	}
 
