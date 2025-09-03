@@ -31,6 +31,8 @@ func ListCountrys(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	jsonData, _ := json.Marshal(list)
+
+	w.WriteHeader(http.StatusOK)
 	w.Write(jsonData)
 
 }
@@ -56,9 +58,15 @@ func Get(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func Root(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`Api hecha con los datos extraidos de: https://datos.bancomundial.org/indicador/SP.DYN.TFRT.IN?end=2023&start=1960&view=chart`))
+}
+
 func main() {
 	http.HandleFunc("/list", ListCountrys)
 	http.HandleFunc("/get/", Get)
+	http.HandleFunc("/", Root)
 
 	http.ListenAndServe(":10000", nil)
 }
