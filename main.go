@@ -4,57 +4,73 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 )
 
-var Countrys []map[string]any
+var Countries []map[string]any
+var ListCountries []byte
+var JSONFile, _ = os.ReadFile("./data.json")
 
 func init() {
-	f, _ := os.ReadFile("./data.json")
+	// Unmarshall json file
+	json.Unmarshal(JSONFile, &Countries)
 
-	json.Unmarshal(f, &Countrys)
-}
-
-func ListCountrys(w http.ResponseWriter, r *http.Request) {
-	list := make([]string, 0, len(Countrys))
-
-	for _, country := range Countrys {
-		switch v := country["Country Name"].(type) {
-		case string:
-			if v != "" {
-				list = append(list, v)
-			}
+	slices.SortFunc(Countries, func(a, b map[string]any) int {
+		if a["Country Name"].(string) > b["Country Name"].(string) {
+			return 1
 		}
+		return -1
+	})
 
+	// List all countries
+	list := make([]string, 0, len(Countries))
+	for _, country := range Countries {
+		list = append(list, country["Country Name"].(string))
 	}
 
+	ListCountries, _ = json.Marshal(list)
+}
+
+func GetListCountries(w http.ResponseWriter, r *http.Request) {
+
 	w.Header().Set("Content-Type", "application/json")
-
-	jsonData, _ := json.Marshal(list)
-
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	w.Write(ListCountries)
 
 }
 
 func Get(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	countryName := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
 
-	w.Header().Set("Content-Type", "application/json")
+	if countryName == "all" {
+		w.WriteHeader(http.StatusOK)
 
-	for _, el := range Countrys {
-
-		if el["Country Name"] == countryName {
-
-			w.WriteHeader(http.StatusOK)
-
-			jsonData, _ := json.Marshal(el)
-			w.Write(jsonData)
-			return
-		}
+		w.Write(JSONFile)
+		return
 	}
-	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte(`{msg: "no data"}`))
+
+	index, found := slices.BinarySearchFunc[[]map[string]any, map[string]any, string](Countries, countryName, func(m map[string]any, s string) int {
+		if m["Country Name"].(string) == s {
+			return 0
+		}
+		if m["Country Name"].(string) > s {
+			return 1
+		}
+		return -1
+	})
+
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{msg: "no data"}`))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	jsonData, _ := json.Marshal(Countries[index])
+	w.Write(jsonData)
 
 }
 
@@ -64,7 +80,7 @@ func Root(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/list", ListCountrys)
+	http.HandleFunc("/list", GetListCountries)
 	http.HandleFunc("/get/", Get)
 	http.HandleFunc("/", Root)
 
